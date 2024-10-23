@@ -4,7 +4,7 @@ import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { TaskModule } from '../src/task/task.module';
-import { Prisma, Task } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { TaskStatus } from '../src/task/task-status.enum';
 import { PrismaModule } from '../src/prisma/prisma.module';
 
@@ -21,7 +21,7 @@ describe('AppController (e2e)', () => {
     await app.init();
 
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
-
+    //prepare database for test (delete rows and restart auto-incrementing) (CASCADE (fk) is a bit overkill)
     await prismaService.$executeRaw`TRUNCATE "public"."Task" RESTART IDENTITY CASCADE;`;
   }, 30000);
 
@@ -43,7 +43,7 @@ describe('AppController (e2e)', () => {
 
     expect(response.body.id).toEqual(1);
   });
-  it('should get a task', async () => {
+  it('should get a task by id', async () => {
     const response = await request(app.getHttpServer())
       .get('/tasks/1')
       .expect(200);
