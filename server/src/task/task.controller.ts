@@ -8,6 +8,7 @@ import {
   Delete,
   ParseIntPipe,
   Query,
+  HttpCode,
 } from '@nestjs/common';
 import { TaskService } from './task.service';
 import { Prisma, Task as TaskModel } from '@prisma/client';
@@ -42,6 +43,7 @@ export class TaskController {
   }
 
   @Delete(':id')
+  @HttpCode(204)
   deleteTask(@Param('id', ParseIntPipe) id: number): Promise<TaskModel> {
     return this.taskService.delete(id);
   }
