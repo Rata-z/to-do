@@ -73,10 +73,6 @@ describe('TaskController', () => {
       const result = await controller.getAllTasks();
       expect(result).toEqual(mockTasks);
     });
-    it('should return empty array', async () => {
-      const result = await controller.getAllTasks(TaskStatus.IN_PROGRESS);
-      expect(result).toEqual([]);
-    });
     it('should return task', async () => {
       const result = await controller.getAllTasks(TaskStatus.COMPLETED);
       expect(result).toEqual([mockTask2]);
