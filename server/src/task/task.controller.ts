@@ -13,6 +13,7 @@ import {
 import { TaskService } from './task.service';
 import { Prisma, Task as TaskModel } from '@prisma/client';
 import { TaskStatus } from './task-status.enum';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('tasks')
 export class TaskController {
@@ -28,11 +29,13 @@ export class TaskController {
     return this.taskService.findAll(status);
   }
 
+  @Throttle({ default: { limit: 6, ttl: 10000 } })
   @Post()
   createTask(@Body() taskData: Prisma.TaskCreateInput): Promise<TaskModel> {
     return this.taskService.create(taskData);
   }
 
+  @Throttle({ default: { limit: 6, ttl: 10000 } })
   @Put(':id')
   updateTask(
     @Param('id', ParseIntPipe) id: number,
@@ -42,6 +45,7 @@ export class TaskController {
     return this.taskService.update(id, taskData);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 10000 } })
   @Delete(':id')
   @HttpCode(204)
   deleteTask(@Param('id', ParseIntPipe) id: number): Promise<TaskModel> {

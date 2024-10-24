@@ -1,7 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Task, Prisma } from '@prisma/client';
-import { TaskStatus } from './task-status.enum';
+import { isValidTaskStatus, TaskStatus } from './task-status.enum';
 
 @Injectable()
 export class TaskService {
@@ -17,11 +21,13 @@ export class TaskService {
 
   async findAll(status?: TaskStatus): Promise<Task[]> {
     if (status)
-      return this.prisma.task.findMany({
-        where: {
-          status,
-        },
-      });
+      if (!isValidTaskStatus(status))
+        throw new BadRequestException('Invalid task status');
+    return this.prisma.task.findMany({
+      where: {
+        status,
+      },
+    });
     return this.prisma.task.findMany();
   }
 
@@ -36,6 +42,8 @@ export class TaskService {
       where: { id },
     });
     if (!task) throw new NotFoundException('Task not found');
+    if (data.status && !isValidTaskStatus(data.status))
+      throw new BadRequestException('Invalid task status');
     return this.prisma.task.update({
       where: { id },
       data,

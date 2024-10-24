@@ -26,6 +26,7 @@ describe('AppController (e2e)', () => {
   }, 30000);
 
   afterAll(async () => {
+    await prismaService.$executeRaw`TRUNCATE "public"."Task" RESTART IDENTITY CASCADE;`;
     await app.close();
     await prismaService.$disconnect();
   }, 30000);
