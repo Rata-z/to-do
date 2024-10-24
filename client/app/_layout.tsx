@@ -6,6 +6,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import "react-native-reanimated";
 import { StatusBar } from "react-native";
+import Toast from "react-native-toast-message";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -48,7 +49,18 @@ function RootLayoutNav() {
   return (
     <>
       <StatusBar barStyle={"light-content"} />
-      <Stack />
+      <Stack
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: "rgb(73,102,75)",
+          },
+          contentStyle: { backgroundColor: "rgb(234,231,222)" },
+        }}
+      >
+        <Stack.Screen name="index" options={{}} />
+        <Stack.Screen name="[id]" options={{}} />
+      </Stack>
+      <Toast />
     </>
   );
 }

@@ -3,7 +3,13 @@ import { NewTaskProps, Status, TaskProps } from "@/constants/Task";
 //
 //
 //
-// Database API Call Service
+// Database API Call Service:
+// -FetchAll
+// -FetchByStatus
+// -FetchById
+// -Create
+// -Update
+// -Delete
 //
 //
 //

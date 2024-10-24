@@ -4,6 +4,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  StyleSheet,
 } from "react-native";
 import React, { ReactNode, useEffect, useState } from "react";
 import { Status, TaskProps } from "@/constants/Task";
@@ -20,8 +21,25 @@ interface TaskCreatorProps {
   handleUpdateTaskLocally: (task: TaskProps) => void;
   handleNewTaskLocally: (task: TaskProps) => void;
   updateTaskDetails: (task: TaskProps) => Promise<TaskProps | null>;
+  setErrorMessage: (error: string | null) => void;
   children?: ReactNode;
 }
+
+//
+//
+//
+//
+// Task Creator Modal:
+// -Clear Forms
+// -Close Modal
+// -Save Task
+//
+//
+//
+//
+//
+//
+//
 
 const TaskCreator = ({
   isVisible,
@@ -31,10 +49,13 @@ const TaskCreator = ({
   setModalData,
   handleNewTaskLocally,
   handleUpdateTaskLocally,
+  setErrorMessage,
 }: TaskCreatorProps) => {
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [inputErrorMessage, setInputErrorMessage] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     if (isVisible && data) {
@@ -43,31 +64,45 @@ const TaskCreator = ({
     }
   }, [isVisible]);
 
-  const clearModal = (): void => {
+  const clearForms = (): void => {
     setTitle("");
     setDescription("");
-    setErrorMessage(null);
+    setInputErrorMessage(null);
   };
   const closeModal = (): void => {
-    clearModal();
+    clearForms();
     setModalData(null);
     setModalVisible(false);
   };
   const handleSaveTask = async (): Promise<void> => {
+    // Title validation
     if (title === "") {
-      setErrorMessage("Title cannot be empty");
+      setInputErrorMessage("Title cannot be empty");
       return;
     }
 
-    setErrorMessage(null);
+    setInputErrorMessage(null);
     let newTask: any = {};
     if (data) {
+      // Updating Task
       try {
-        newTask = await updateTaskDetails(data);
-      } catch (err) {
-        console.log(err);
+        newTask = await handleUpdateTaskLocally(data);
+      } catch (error) {
+        if (error instanceof Error) {
+          setErrorMessage(
+            "Error updating tasks: " +
+              error.message +
+              " Please try again later."
+          );
+        } else {
+          setErrorMessage(
+            "An unexpected error occurred. Please try again later."
+          );
+        }
+        return;
       }
     } else {
+      // Creating New Task
       try {
         const response = await addTask({
           title,
@@ -76,18 +111,30 @@ const TaskCreator = ({
         });
         newTask = await response.json();
         await taskSchema.validate(newTask);
-      } catch (err) {
-        console.error(err);
+      } catch (error) {
+        if (error instanceof Error) {
+          setErrorMessage(
+            "Error creating tasks: " +
+              error.message +
+              " Please try again later."
+          );
+        } else {
+          setErrorMessage(
+            "An unexpected error occurred. Please try again later."
+          );
+        }
+        return;
       }
     }
 
+    // Saving locally
     if (data) {
       handleUpdateTaskLocally(newTask as TaskProps);
       closeModal();
       return;
     }
     handleNewTaskLocally(newTask as TaskProps);
-    clearModal();
+    clearForms();
   };
 
   return (
@@ -100,30 +147,10 @@ const TaskCreator = ({
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{
-          height: "100%",
-          width: "100%",
-          justifyContent: "flex-end",
-        }}
+        style={styles.mainContainer}
       >
-        <Pressable
-          style={{
-            backgroundColor: "rgba(0,0,0,0.5)",
-            height: "100%",
-            width: "100%",
-            position: "absolute",
-          }}
-          onPress={() => closeModal()}
-        />
-        <View
-          style={{
-            width: "100%",
-            backgroundColor: "rgb(244,241,238)",
-            borderTopLeftRadius: 10,
-            borderTopRightRadius: 10,
-            overflow: "hidden",
-          }}
-        >
+        <Pressable style={styles.background} onPress={() => closeModal()} />
+        <View style={styles.modalContainer}>
           <View style={{ paddingBottom: 14 }}>
             <TaskInput
               autoFocus
@@ -131,7 +158,7 @@ const TaskCreator = ({
               label="Title"
               setValue={setTitle}
               height={60}
-              errorMessage={errorMessage}
+              errorMessage={inputErrorMessage}
             />
           </View>
           <TaskInput
@@ -140,17 +167,11 @@ const TaskCreator = ({
             setValue={setDescription}
             height={60}
           />
-          <View
-            style={{
-              justifyContent: "flex-end",
-              paddingTop: 5,
-              paddingBottom: 15,
-            }}
-          >
+          <View style={styles.buttonContainer}>
             <Button
               mode="contained"
               buttonColor="rgb(108,135,115)"
-              style={{ width: "60%", alignSelf: "center" }}
+              style={styles.button}
               onPress={() => handleSaveTask()}
             >
               Save
@@ -164,6 +185,30 @@ const TaskCreator = ({
 };
 
 export default TaskCreator;
-function updateTaskDetails(data: TaskProps): any {
-  throw new Error("Function not implemented.");
-}
+
+const styles = StyleSheet.create({
+  mainContainer: {
+    height: "100%",
+    width: "100%",
+    justifyContent: "flex-end",
+  },
+  background: {
+    backgroundColor: "rgba(0,0,0,0.5)",
+    height: "100%",
+    width: "100%",
+    position: "absolute",
+  },
+  modalContainer: {
+    width: "100%",
+    backgroundColor: "rgb(244,241,238)",
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    overflow: "hidden",
+  },
+  buttonContainer: {
+    justifyContent: "flex-end",
+    paddingTop: 5,
+    paddingBottom: 15,
+  },
+  button: { width: "60%", alignSelf: "center" },
+});

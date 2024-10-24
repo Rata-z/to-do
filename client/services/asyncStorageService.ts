@@ -4,7 +4,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 //
 //
 //
-// Local Storage service
+// Local Storage Service:
+// -Store
+// -Fetch
+// -Delete
+//
 //
 //
 //
@@ -30,7 +34,6 @@ export const fetchTasksFromDevice = async (): Promise<TaskProps[] | null> => {
   }
 };
 
-// Remove data from device with error handling
 export const removeTasksFromDevice = async (): Promise<void> => {
   try {
     await AsyncStorage.removeItem(STORAGE_KEY);

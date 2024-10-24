@@ -11,6 +11,14 @@ interface TaskInputProps {
   autoFocus?: boolean;
 }
 
+//
+//
+//
+// Custom input field
+//
+//
+//
+
 const TaskInput = ({
   value,
   setValue,
@@ -28,6 +36,7 @@ const TaskInput = ({
         }
       }, 200);
   }, []);
+
   return (
     <View style={{ height }}>
       <TextInput

@@ -20,9 +20,25 @@ import { Link, Stack } from "expo-router";
 import TaskCreator from "@/components/task/TaskCreator";
 import ListHeader from "@/components/ListHeader";
 import { taskSchema } from "@/components/task/TaskValidator";
+import Toast from "react-native-toast-message";
+
+//
+//
+//
+// Home Screen:
+// -Local Fetch (AsyncStorage)
+// -Database Fetch
+// -Local Create/Update
+// -Re-Fetch on swipe
+// -CheckBox Toggler
+// -Database Update/Delete
+//
+//
+//
+
 const Home = () => {
   const [tasks, setTasks] = useState<TaskProps[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [isVisible, setModalVisible] = useState<boolean>(false);
@@ -36,6 +52,17 @@ const Home = () => {
     if (modalData) setModalVisible(true);
   }, [modalData]);
 
+  // Error Alert
+  useEffect(() => {
+    if (errorMessage)
+      Toast.show({
+        text1: "Error",
+        text2: errorMessage,
+        type: "error",
+      });
+  }, [errorMessage]);
+
+  // get call to asyncStorageService
   const loadTasks = async () => {
     try {
       const storedTasks = await fetchTasksFromDevice();
@@ -47,19 +74,20 @@ const Home = () => {
       setLoading(false);
       return;
     } catch (error) {
-      console.error("Error loading tasks:", error);
+      errorHandler("Error loading tasks: ", error);
     }
     fetchTasksFromDatabase();
     return;
   };
 
+  // Get call to taskService
   const fetchTasksFromDatabase = async () => {
     try {
       const response = await fetchTasks();
       setTasks(response.sort((a, b) => b.id - a.id));
       storeTasksOnDevice(response);
-    } catch (err) {
-      if (err instanceof Error) setError(err.message);
+    } catch (error) {
+      errorHandler("Error fetching tasks: ", error);
     } finally {
       setLoading(false);
     }
@@ -76,12 +104,27 @@ const Home = () => {
     storeTasksOnDevice(newList);
   };
 
-  const handleRefresh = () => {
+  // Error message builder
+  const errorHandler = (task: string, error: any): void => {
+    if (error instanceof Error) {
+      setErrorMessage(task + error.message + ". Please try again later.");
+    } else {
+      setErrorMessage("An unexpected error occurred. Please try again later.");
+    }
+  };
+
+  // Re-Fetch from Database on swipe down
+  const handleRefresh = async () => {
     setRefreshing(true);
-    fetchTasksFromDatabase();
+    try {
+      await fetchTasksFromDatabase();
+    } catch (error) {
+      errorHandler("Error fetching tasks: ", error);
+    }
     setRefreshing(false);
   };
 
+  // CheckBox toggler
   const toggleTaskCompletion = (taskId: number) => {
     const toggledTask = tasks.find((t) => t.id === taskId);
     if (toggledTask) {
@@ -95,10 +138,11 @@ const Home = () => {
       setTasks(newList);
       storeTasksOnDevice(newList);
     } else {
-      ("error");
+      setErrorMessage("Error: Task not found.");
     }
   };
 
+  // Update call to taskService
   const updateTaskDetails = async (
     task: TaskProps
   ): Promise<TaskProps | null> => {
@@ -111,12 +155,12 @@ const Home = () => {
       const newTask = await response.json();
       await taskSchema.validate(newTask);
       return newTask as TaskProps;
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      errorHandler("Error updating tasks: ", error);
     }
     return null;
   };
-
+  // Delete call to taskService
   const handleDeleteTask = (taskId: number) => {
     setTasks((prevtasks) => prevtasks.filter((t) => t.id !== taskId));
     deleteTask(taskId);
@@ -125,25 +169,20 @@ const Home = () => {
   if (loading) {
     return <ActivityIndicator size="large" color="rgb(102, 73, 100)" />;
   }
-  if (error) {
-    return <Text>Error: {error}</Text>;
-  }
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "rgb(234,231,222)" }}>
+    <SafeAreaView style={{ flex: 1 }}>
       <Stack.Screen
         options={{
           title: "My home",
-          headerStyle: {
-            backgroundColor: "rgb(73,102,75)",
-          },
           headerTitle: () => <ListHeader />,
         }}
       />
+      {/* List */}
       <FlashList
         data={tasks}
         ListEmptyComponent={
-          <View style={{ width: "100%", alignItems: "center", paddingTop: 50 }}>
-            <Text style={{ fontSize: 24, color: "grey" }}>Add some tasks!</Text>
+          <View style={styles.emptyMessageContainer}>
+            <Text style={styles.emptyMessageText}>Add some tasks!</Text>
           </View>
         }
         renderItem={({ item }) => {
@@ -154,40 +193,24 @@ const Home = () => {
               deleteTask={handleDeleteTask}
               toggleTask={toggleTaskCompletion}
               setModalData={setModalData}
+              setErrorMessage={setErrorMessage}
             ></Task>
           );
         }}
         refreshing={refreshing}
         onRefresh={handleRefresh}
       />
+      {/* Add Button */}
       {!isVisible && (
         <TouchableOpacity
           activeOpacity={0.7}
-          style={{
-            position: "absolute",
-            bottom: 35,
-            width: 90,
-            height: 90,
-            borderRadius: 45,
-            justifyContent: "center",
-            alignItems: "center",
-            backgroundColor: "rgb(108,135,115)",
-            right: 25,
-            shadowColor: "#000",
-            shadowOffset: {
-              width: 0,
-              height: 4,
-            },
-            shadowOpacity: 0.32,
-            shadowRadius: 5.46,
-
-            elevation: 9,
-          }}
+          style={styles.addButton}
           onPress={() => setModalVisible(true)}
         >
           <AntDesign name="plus" size={44} color="white" />
         </TouchableOpacity>
       )}
+      {/* Task Editor Modal */}
       <TaskCreator
         handleNewTaskLocally={handleNewTaskLocally}
         handleUpdateTaskLocally={handleUpdateTaskLocally}
@@ -196,6 +219,7 @@ const Home = () => {
         setModalData={setModalData}
         updateTaskDetails={updateTaskDetails}
         data={modalData}
+        setErrorMessage={setErrorMessage}
       />
     </SafeAreaView>
   );
@@ -203,4 +227,31 @@ const Home = () => {
 
 export default Home;
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  emptyMessageContainer: {
+    width: "100%",
+    alignItems: "center",
+    paddingTop: 50,
+  },
+  emptyMessageText: { fontSize: 24, color: "grey" },
+  addButton: {
+    position: "absolute",
+    bottom: 35,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgb(108,135,115)",
+    right: 25,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.32,
+    shadowRadius: 5.46,
+
+    elevation: 9,
+  },
+});
