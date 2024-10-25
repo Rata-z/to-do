@@ -53,6 +53,7 @@ const TaskCreator = ({
 }: TaskCreatorProps) => {
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
+  const [addingProcess, setAddingProcess] = useState<boolean>(false);
   const [inputErrorMessage, setInputErrorMessage] = useState<string | null>(
     null
   );
@@ -75,6 +76,7 @@ const TaskCreator = ({
     setModalVisible(false);
   };
   const handleSaveTask = async (): Promise<void> => {
+    setAddingProcess(true);
     // Title validation
     if (title === "") {
       setInputErrorMessage("Title cannot be empty");
@@ -86,7 +88,14 @@ const TaskCreator = ({
     if (data) {
       // Updating Task
       try {
-        newTask = await handleUpdateTaskLocally(data);
+        const response = await updateTask(data.id, {
+          description: description,
+          title: title,
+          status: data.status,
+        } as TaskProps);
+        newTask = await response.json();
+
+        await taskSchema.validate(newTask);
       } catch (error) {
         if (error instanceof Error) {
           setErrorMessage(
@@ -110,6 +119,7 @@ const TaskCreator = ({
           status: Status.TO_DO,
         });
         newTask = await response.json();
+
         await taskSchema.validate(newTask);
       } catch (error) {
         if (error instanceof Error) {
@@ -131,10 +141,12 @@ const TaskCreator = ({
     if (data) {
       handleUpdateTaskLocally(newTask as TaskProps);
       closeModal();
+      setAddingProcess(false);
       return;
     }
     handleNewTaskLocally(newTask as TaskProps);
     clearForms();
+    setAddingProcess(false);
   };
 
   return (
@@ -169,6 +181,7 @@ const TaskCreator = ({
           />
           <View style={styles.buttonContainer}>
             <Button
+              disabled={addingProcess}
               mode="contained"
               buttonColor="rgb(108,135,115)"
               style={styles.button}

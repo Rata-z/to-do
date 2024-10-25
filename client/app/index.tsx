@@ -26,6 +26,7 @@ import Toast from "react-native-toast-message";
 //
 //
 // Home Screen:
+// -List Name editor on press
 // -Local Fetch (AsyncStorage)
 // -Database Fetch
 // -Local Create/Update
@@ -93,13 +94,14 @@ const Home = () => {
     }
   };
 
-  const handleNewTaskLocally = (task: TaskProps) => {
+  const handleNewTaskLocally = async (task: TaskProps): Promise<void> => {
     const newList = [...tasks, task];
     setTasks(newList);
     storeTasksOnDevice(newList);
   };
-  const handleUpdateTaskLocally = (task: TaskProps) => {
+  const handleUpdateTaskLocally = async (task: TaskProps): Promise<void> => {
     const newList = tasks.map((t) => (t.id === task.id ? task : t));
+
     setTasks(newList);
     storeTasksOnDevice(newList);
   };
@@ -180,6 +182,7 @@ const Home = () => {
       {/* List */}
       <FlashList
         data={tasks}
+        estimatedItemSize={200}
         ListEmptyComponent={
           <View style={styles.emptyMessageContainer}>
             <Text style={styles.emptyMessageText}>Add some tasks!</Text>

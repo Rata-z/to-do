@@ -26,6 +26,7 @@ interface TaskComponentProsp {
 //
 // Task List Component:
 // -Gesture Handler (Swiping)
+// -Task Editing on description click
 //
 //
 //
